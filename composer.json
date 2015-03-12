@@ -3,6 +3,8 @@
   "require": {
     "php": ">=5.3.2",
     "behat/behat": "~3.0,>=3.0.5",
+    "behat/mink":   "~1.5",
+    "behat/mink-extension": "*",
     "symfony/config": "~2.2"
   }
 }
