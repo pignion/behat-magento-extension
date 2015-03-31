@@ -17,4 +17,5 @@ interface MageAwareContext
     public function setPageManager($manager);
     public function setMageParameters($parameters);
     public function setFixtureManager($manager);
+    public function setSessionManager($manager);
 }

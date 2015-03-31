@@ -82,6 +82,9 @@ class PageManager
             if($length > 6 && $url_segments[1] == 'category') {
                 return $this->getCategoryPage( $url_segments[6]);
             }
+            if($length > 6 && $url_segments[1] == 'product') {
+                return $this->getProductPage( $url_segments[4]);
+            }
         }
 
 

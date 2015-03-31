@@ -69,9 +69,14 @@ class MageExtension implements ExtensionInterface
     public function configure(ArrayNodeDefinition $builder)
     {
         $default_fixtures = array(
-            'admin_user'      =>   '\Behat\MageExtension\Fixture\AdminUserFixtureFactory',
-            'cart_product'  =>   '\Behat\MageExtension\Fixture\CartProductFixtureFactory',
-            'customer'      =>   '\Behat\MageExtension\Fixture\CustomerFixtureFactory'
+            'admin_user'             => '\Behat\MageExtension\Fixture\AdminUserFixtureFactory',
+            'cart_product'           => '\Behat\MageExtension\Fixture\CartProductFixtureFactory',
+            'customer'               => '\Behat\MageExtension\Fixture\CustomerFixtureFactory',
+            'product'                => '\Behat\MageExtension\Fixture\ProductFixtureFactory',
+            'configurable_product'   => '\Behat\MageExtension\Fixture\ConfigurableProductFixtureFactory',
+            'attribute_set'          => '\Behat\MageExtension\Fixture\AttributeSetFixtureFactory',
+            'attribute'              => '\Behat\MageExtension\Fixture\AttributeFixtureFactory',
+            'attribute_with_options' => '\Behat\MageExtension\Fixture\AttributeWithOptionsFixtureFactory',
         );
 
         $builder

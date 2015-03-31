@@ -6,6 +6,7 @@ namespace Behat\MageExtension\Context;
 use Behat\MageExtension\Page\PageManager;
 use Behat\MinkExtension\Context\RawMinkContext;
 use Behat\MageExtension\Fixture\FixtureFactoryManager;
+use Behat\MageExtension\Session\SessionManager;
 
 class RawMageContext extends RawMinkContext implements MageAwareContext
 {
@@ -13,6 +14,7 @@ class RawMageContext extends RawMinkContext implements MageAwareContext
     private $_parameters = null;
     private $_page_manager = null;
     private $_fixture_manager = null;
+    private $_session_manager = null;
 
     /**
      * @return FixtureFactoryManager
@@ -67,6 +69,19 @@ class RawMageContext extends RawMinkContext implements MageAwareContext
     }
 
     /**
+     * @return SessionManager
+     */
+    public function getSessionManager()
+    {
+        return $this->_session_manager;
+    }
+
+    public function setSessionManager($manager)
+    {
+        $this->_session_manager = $manager;
+    }
+
+    /**
      * @return \Behat\MageExtension\Page\MagePage
      */
     public function getCurrentPage()
@@ -74,6 +89,56 @@ class RawMageContext extends RawMinkContext implements MageAwareContext
         return $this->getPageManager()->getCurrentPage();
     }
 
+    public function getProductUrlByName($product_name)
+    {
+        $prod = \Mage::getResourceModel('catalog/product_collection')->addFieldToFilter('name', $product_name);
+        $id = $prod->getFirstItem()->getEntityId();
+        return $this->getProductUrlById($id);
+
+    }
+
+    public function getProductUrlById($id)
+    {
+        /**
+         * @var $model \Mage_Catalog_Model_Product
+         */
+        $model =  \Mage::getModel('catalog/product')->load($id);
+        $urlModel = \Mage::getSingleton('catalog/factory')->getProductUrlInstance();
+        return $urlModel->getUrl($model, array('_type'=>\Mage_Core_Model_Store::URL_TYPE_WEB));
+        // return $model->getProductURL();
+    }
+
+    public function getAttributeInfo($attribute_id)
+    {
+        $attribute = \Mage::getModel('catalog/resource_eav_attribute')->load($attribute_id);
+        return array(
+            'attribute_id' => $attribute_id,
+            'options' =>  \Mage::getModel('eav/entity_attribute_source_table')->setAttribute($attribute)->getAllOptions(false),
+            'code'    => $attribute->getAttributeCode()
+        );
+    }
+
+
+    public function addToCart($product_id, $qty = 1, $options = null)
+    {
+        $product = \Mage::getModel('catalog/product')->load($product_id);
+        $customer = \Mage::getSingleton('customer/session')->getCustomer();
+        if($customer) {
+            \Mage::getSingleton('checkout/session')->getQuote()->setCustomerId($customer->getId());
+        }
+//        $cart = \Mage::getModel('checkout/cart');
+//        $cart->init();
+//        $cart->addProduct($product, array('product_id' => $product_id,'qty' => $qty));
+//        $cart->save();
+
+        \Mage::getSingleton('checkout/session')->setCartWasUpdated(true);
+        $quote = \Mage::getSingleton('checkout/session')->getQuote();
+        if($options) {
+            $quote->addProduct($product, new \Varien_Object( array('product_id'=> $product_id, 'super_attribute' => $options, 'qty' => $qty)));
+        }
+        else $quote->addProduct($product, $qty);
+        $quote->collectTotals()->save();
+    }
 
     /**
      * @param string $fixture_name
@@ -82,7 +147,7 @@ class RawMageContext extends RawMinkContext implements MageAwareContext
      */
     public function createFixture($fixture_name, $attributes = array())
     {
-        $this->getFixtureManager()->getFactory($fixture_name)->create($attributes);
+        return $this->getFixtureManager()->getFactory($fixture_name)->create($attributes);
     }
 
     /** @AfterScenario */
@@ -90,4 +155,6 @@ class RawMageContext extends RawMinkContext implements MageAwareContext
     {
         $this->getFixtureManager()->cleanFactories();
     }
+
+
 }

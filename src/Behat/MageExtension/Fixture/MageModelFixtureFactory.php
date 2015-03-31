@@ -2,30 +2,36 @@
 
 namespace Behat\MageExtension\Fixture;
 
+use Behat\MageExtension\Traits\Sequencer;
+use Symfony\Component\Config\Definition\Exception\Exception;
+
 abstract class MageModelFixtureFactory implements IFixtureFactory
 {
-    public static function sequence($funcOrString, $firstNum = 1) {
-        $n = $firstNum - 1;
-        if (is_callable($funcOrString)) {
-            return function() use (&$n, $funcOrString) {
-                $n++;
-                return call_user_func($funcOrString, $n);
-            };
-        } elseif (strpos($funcOrString, '%d') !== false) {
-            return function() use (&$n, $funcOrString) {
-                $n++;
-                return str_replace('%d', $n, $funcOrString);
-            };
-        } else {
-            return function() use (&$n, $funcOrString) {
-                $n++;
-                return $funcOrString . $n;
-            };
-        }
-    }
+    use Sequencer;
 
     private $_fixtures = array();
+    private $_deferred = array();
+//    private $_sequences = array();
     private $_defaultParameters = array();
+    private $_manager;
+
+    /**
+     * @return FixtureFactoryManager
+     */
+    public function getManager()
+    {
+        return $this->_manager;
+    }
+
+    public function setManager(FixtureFactoryManager $manager)
+    {
+        $this->_manager = $manager;
+    }
+
+    public function getRequiredParameters()
+    {
+        return array();
+    }
 
     public abstract function getModelName();
 
@@ -41,13 +47,37 @@ abstract class MageModelFixtureFactory implements IFixtureFactory
         return $this->_defaultParameters;
     }
 
+    public function setDefaultParameter($name, $value)
+    {
+        $this->_defaultParameters[$name] = $value;
+    }
+
     /**
-     * Sets the parameters that will be used for model fixture created
+     * Merges in the parameters that will be used for model fixture created
      * @param array $parameters the parameter kay/value pairs used in model creation. If items are callable they'll be exectued at runtime
      */
     public function setDefaultParameters(array $parameters)
     {
-        $this->_defaultParameters = $parameters;
+        $this->_defaultParameters = array_merge($this->getDefaultParameters(), $parameters);
+    }
+
+    /**
+     * Combines and procoesses the default parameters with the supplied parameters
+     * @param array $parameters
+     * @return array
+     */
+    public function processParameters($parameters)
+    {
+        $result = array_merge($this->getDefaultParameters(), $parameters);
+        array_walk($result, function(&$item){
+            if(is_callable($item)) $item = $item();
+        });
+        foreach($this->getRequiredParameters() as $param) {
+            if(!isset($result[$param])) {
+                throw new \Exception ("$param is a required parameter for this fixture");
+            }
+        }
+        return $result;
     }
 
     /**
@@ -57,41 +87,77 @@ abstract class MageModelFixtureFactory implements IFixtureFactory
      */
     public function create($parameters = array())
     {
-        $data = array_merge($this->getDefaultParameters(), $parameters);
-        array_walk($data, function(&$item){
-            if(is_callable($item)) $item = $item();
-        });
-
+        $data = $this->processParameters($parameters);
         $model = $this->getMageModel();
         $model->addData($data);
         $model->save();
-        $this->_fixtures[] = $model;
-        return $model;
+        $fixture = new WrappedMageModel($model);
+        $this->register($fixture);
+        return $fixture;
     }
 
     /**
-     * @param $fixture Mage_Core_Model_Abstract
+     * Adds a fixture to the factory's known fixture list
+     * @param $fixture
+     */
+    public function register($fixture)
+    {
+        $this->_fixtures[] = $fixture;
+    }
+
+    /**
+     * Attempts to delete a fixture
+     * @param $fixture
+     * @return bool Whether the action was successful
+     * @throws \Exception
      */
     public function deleteFixture($fixture)
     {
-        \Mage::app()->setCurrentStore(\Mage_Core_Model_App::ADMIN_STORE_ID);
-        $fixture->delete();
-        \Mage::app()->setCurrentStore(\Mage_Core_Model_App::DISTRO_STORE_ID);
+        $model = $fixture->getWrappedModel();
+        try {
+            \Mage::app()->setCurrentStore(\Mage_Core_Model_App::ADMIN_STORE_ID);
+            $result = $model->delete();
+            \Mage::app()->setCurrentStore(\Mage_Core_Model_App::DISTRO_STORE_ID);
+            return true;
+        } catch(\Exception $ex) {
+            throw new \Exception("There was an error deleting the fixture: ". $ex->getMessage());
+        }
     }
 
     /**
-     * @return array
+     * @return array an array of fixtures
      */
     public function getFixtures()
     {
         return $this->_fixtures;
     }
 
+    /**
+     * Attempts to clean all fixtures
+     * @return bool
+     * @throws \Exception
+     */
     public function clean()
     {
-        foreach ($this->_fixtures as $fixture) {
-            $this->deleteFixture($fixture);
+        $deleted = array();
+        foreach ($this->_fixtures as $i => $fixture) {
+            if($this->deleteFixture($fixture)) {
+                $deleted[] = $i;
+            }
         }
-        $this->_fixtures = array();
+        foreach($deleted as $i) {
+            unset($this->_fixtures[$i]);
+        }
+        return count( $this->_fixtures ) === 0;
     }
-} 
+
+    /**
+     * Whether the factory is clean of fixtures
+     * @return boolean
+     */
+    public function isClean()
+    {
+        return count( $this->_fixtures ) === 0;
+    }
+
+}

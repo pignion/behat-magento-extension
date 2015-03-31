@@ -4,10 +4,15 @@ namespace Behat\MageExtension\Fixture;
 
 class CartProductFixtureFactory extends MageModelFixtureFactory
 {
+    public function deleteFixture($fixture)
+    {
+        return null;
+    }
 
     public function getModelName()
     {
-        return 'checkout/cart';
+        return null;
+        //return 'checkout/cart';
     }
 
     /**
@@ -15,16 +20,19 @@ class CartProductFixtureFactory extends MageModelFixtureFactory
      * @return Mage_Customer_Model_Customer
      * @throws Exception
      */
-    public function create($product_id = 567481, $qty = 1)
+    public function create($parameters = array())
     {
-        $cart = parent::create();
-        $product = Mage::getModel('catalog/product')->load($product_id);
+        $cart = \Mage::getModel('checkout/cart');
+        //$cart = parent::create($parameters);
+        $product_id = $parameters['product_id'];
+        $qty = $parameters['qty'];
+        $product = \Mage::getModel('catalog/product')->load($product_id);
         $cart->init();
         $cart->addProduct($product, array('product_id' => $product_id,'qty' => $qty));
         $cart->save();
-        Mage::getSingleton('checkout/session')->setCartWasUpdated(true);
+        \Mage::getSingleton('checkout/session')->setCartWasUpdated(true);
 
-        $quote = Mage::getSingleton('checkout/session')->getQuote();
+        $quote = \Mage::getSingleton('checkout/session')->getQuote();
         $quote->addProduct($product, $qty);
 
         $quote->collectTotals()->save();
@@ -32,4 +40,8 @@ class CartProductFixtureFactory extends MageModelFixtureFactory
         return $cart;
     }
 
-} 
+    public function getRequiredParameters()
+    {
+        return array('product_id', 'qty');
+    }
+}

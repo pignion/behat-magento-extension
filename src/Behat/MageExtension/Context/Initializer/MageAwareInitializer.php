@@ -10,6 +10,7 @@ use Behat\MageExtension\Fixture\FixtureFactoryManager;
 use Behat\Mink\Mink;
 use Behat\MinkExtension\Context\MinkAwareContext;
 use Behat\MageExtension\Page\PageManager;
+use Behat\MageExtension\Session\SessionManager;
 
 class MageAwareInitializer implements ContextInitializer
 {
@@ -20,6 +21,7 @@ class MageAwareInitializer implements ContextInitializer
     {
         $this->_parameters = $parameters;
         $this->_mage_app = \Mage::app();
+        //\Mage::register('custom_entry_point', true);
     }
 
     /**
@@ -36,5 +38,6 @@ class MageAwareInitializer implements ContextInitializer
         $context->setMageParameters($this->_parameters);
         $context->setPageManager(new PageManager($context, $this->_parameters));
         $context->setFixtureManager(new FixtureFactoryManager($this->_parameters['fixture_factories']));
+        $context->setSessionManager(new SessionManager($this->_mage_app));
     }
 }

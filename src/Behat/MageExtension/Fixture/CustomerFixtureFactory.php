@@ -2,8 +2,19 @@
 
 namespace Behat\MageExtension\Fixture;
 
+use Symfony\Component\Config\Definition\Exception\Exception;
+
 class CustomerFixtureFactory extends MageModelFixtureFactory
 {
+
+    public function __construct()
+    {
+        $this->setDefaultParameters(array(
+            'email' => $this->nextValue('email', function($i){ return "johnj+$i@copiousinc.com";}),
+            'password' => $this->nextValue('password', function($i){ return "password_$i";}),
+
+        ));
+    }
 
     public function getModelName()
     {
