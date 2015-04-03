@@ -83,7 +83,7 @@ class MageExtension implements ExtensionInterface
             ->beforeNormalization()
                 ->always()
                 ->then(function($v) use ($default_fixtures) {
-                    if(array_key_exists('fixture_factories', $v)) {
+                    if(array_key_exists('fixture_factories', $v) && is_array($v['fixture_factories'])){
                         $v['fixture_factories'] = array_merge($default_fixtures, $v['fixture_factories']);
                     } else {
                         $v['fixture_factories'] = $default_fixtures;

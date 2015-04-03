@@ -32,23 +32,24 @@ class ConfigurableProductFixtureFactory extends ProductFixtureFactory
      * @return array
      * @throws \Exception
      */
-    public function generateSimples($attribute_ids)
+    public function generateSimples($attribute_ids, $parameters = array(), $limit = 5)
     {
         $simples = array();
         $all_options = array();
-        foreach ($attribute_ids as $attribute_id) {
-            $attribute = \Mage::getModel('catalog/resource_eav_attribute')->load($attribute_id);
-            $options = \Mage::getModel('eav/entity_attribute_source_table')->setAttribute($attribute)->getAllOptions(false);
+        foreach ($attribute_ids as $attribute_id => $options) {
+            $id = !is_array($options) ? $options : $attribute_id;
+            $attribute = \Mage::getModel('catalog/resource_eav_attribute')->load($id);
+            $options = is_array($options) ? array_map(function($option) { return array('value' => $option); }, $options) : \Mage::getModel('eav/entity_attribute_source_table')->setAttribute($attribute)->getAllOptions(false);
             $all_options[$attribute->getAttributeCode()] = $options;
         }
 
-        foreach($this->cartesianOptions($all_options) as $option_combination)
+        foreach(array_slice($this->cartesianOptions($all_options), 0, $limit) as $option_combination)
         {
-            $product_attributes = array();
+            $product_attributes = $parameters;
             foreach($option_combination as $attribute_code => $option) {
                $product_attributes[$attribute_code] = $option['value'];
             }
-            $simples[] = $this->getManager()->getFactory('product')->create($product_attributes);
+           // $simples[] = $this->getManager()->getFactory('product')->create($product_attributes);
         }
 
         return $simples;
@@ -77,32 +78,17 @@ class ConfigurableProductFixtureFactory extends ProductFixtureFactory
 
             $result = $append;
         }
-
         return $result;
     }
 
     public function create($parameters = array())
     {
-        $attribute_ids = array();
-        $simpleProducts = array();
-
-        if(isset($parameters['configurable_attributes'])) {
-            $attribute_ids = $parameters['configurable_attributes'];
-            unset($parameters['configurable_attributes']);
-        }
-        else {
-            $attribute_ids = $this->generateAttributes();
-        }
-
-        if(isset($parameters['simple_products'])) {
-            $simpleProducts = $parameters['simple_products'];
-            unset($parameters['simple_products']);
-        }
-        else {
-            $simpleProducts = $this->generateSimples($attribute_ids);
-        }
-
         $data = $this->processParameters($parameters);
+        unset($data['simple_products']);
+        unset($data['configurable_attributes']);
+
+        $attribute_ids = isset($parameters['configurable_attributes']) ? $parameters['configurable_attributes'] : $this->generateAttributes();
+        $simpleProducts = isset($parameters['simple_products']) ? $parameters['simple_products'] : $this->generateSimples($attribute_ids, $parameters);
 
         $config_product = $this->getMageModel();
         $config_product->addData($data);

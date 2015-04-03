@@ -103,21 +103,15 @@ class RawMageContext extends RawMinkContext implements MageAwareContext
          * @var $model \Mage_Catalog_Model_Product
          */
         $model =  \Mage::getModel('catalog/product')->load($id);
-        $urlModel = \Mage::getSingleton('catalog/factory')->getProductUrlInstance();
-        return $urlModel->getUrl($model, array('_type'=>\Mage_Core_Model_Store::URL_TYPE_WEB));
-        // return $model->getProductURL();
-    }
-
-    public function getAttributeInfo($attribute_id)
-    {
-        $attribute = \Mage::getModel('catalog/resource_eav_attribute')->load($attribute_id);
-        return array(
-            'attribute_id' => $attribute_id,
-            'options' =>  \Mage::getModel('eav/entity_attribute_source_table')->setAttribute($attribute)->getAllOptions(false),
-            'code'    => $attribute->getAttributeCode()
+        return $model->getUrlInStore();
+//        return $model->getUrlInStore(array('_ignore_category' => true));
+        $url = \Mage::getModel('core/url_rewrite')->loadByRequestPath(
+            $model->getUrlPath()
         );
+        return $url->getTargetPath();
+//        $urlModel = \Mage::getSingleton('catalog/factory')->getProductUrlInstance();
+//        return $urlModel->getUrl($model, array('_type'=>\Mage_Core_Model_Store::URL_TYPE_WEB));
     }
-
 
     public function addToCart($product_id, $qty = 1, $options = null)
     {
