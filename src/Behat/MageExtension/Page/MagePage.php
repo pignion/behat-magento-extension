@@ -69,7 +69,7 @@ class MagePage
         if($selector) {
             return call_user_func_array(array($this->getDocument(), 'find'), $selector);
         }
-        else throw new Exception("There is no element defined for $element_name. Add it to the elements array for the " . get_class($this) .  " class");
+        else throw new \Exception("There is no element defined for $element_name. Add it to the elements array for the " . get_class($this) .  " class");
     }
 
     /**
@@ -146,6 +146,6 @@ class MagePage
     {
         $el = $this->getElementByName($element_name);
         if($el) $el->click();
-        else throw new Exception('Could not find an element with selector '. implode(': ', $this->get_element_selector($element_name)));
+        else throw new \Exception('Could not find an element with selector '. implode(': ', $this->getSelector($element_name)));
     }
 }
