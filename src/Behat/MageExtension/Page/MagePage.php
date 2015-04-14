@@ -23,6 +23,11 @@ class MagePage
         if(isset($parent_elements)){ $this->elements = array_merge($this->elements, $parent_elements); }
     }
 
+    public function isA($class_name)
+    {
+        return is_a($this, $class_name);
+    }
+
     public function setParameters(array $parameters)
     {
         $this->_parameters = $parameters;
@@ -83,7 +88,7 @@ class MagePage
         if($selector) {
             return call_user_func_array(array($this->getDocument(), 'findAll'), $selector);
         }
-        else throw new Exception("There is no element defined for $element_name. Add it to the elements array for the " . get_class($this) .  " class");
+        else throw new \Exception("There is no element defined for $element_name. Add it to the elements array for the " . get_class($this) .  " class");
     }
 
     /**
