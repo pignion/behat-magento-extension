@@ -14,6 +14,11 @@ class MagePage
 
     protected $elements = array();
 
+    public function __call($method, $arguments)
+    {
+        throw new \Exception("Calling undefined method $method on " . get_class($this));
+    }
+
     public function __construct(RawMageContext $context, array $parameters = array())
     {
         $this->_context = $context;
@@ -51,13 +56,27 @@ class MagePage
     }
 
     /**
+     * @return array
+     */
+    public function getElements()
+    {
+        return $this->elements;
+    }
+
+    public function addElement($name, $value)
+    {
+        $this->elements[$name] = $value;
+    }
+
+    /**
      * @param $element_name string
      * @return array|null
      */
     public function getSelector($element_name) {
-        if(array_key_exists($element_name, $this->elements)) {
-            $selector = $this->elements[$element_name];
+        if(array_key_exists($element_name, $this->getElements())) {
+            $selector = $this->getElements()[$element_name];
             if(is_array($selector)) return $selector;
+            if(is_callable($selector)) return $selector;
             else return array('css', $selector);
         }
         return null;
@@ -71,6 +90,9 @@ class MagePage
     public function getElementByName($element_name)
     {
         $selector = $this->getSelector($element_name);
+        if(is_callable($selector)) {
+            return $selector($this);
+        }
         if($selector) {
             return call_user_func_array(array($this->getDocument(), 'find'), $selector);
         }
@@ -85,6 +107,12 @@ class MagePage
     public function getElementsByName($element_name)
     {
         $selector = $this->getSelector($element_name);
+
+        if(is_callable($selector)) {
+            $result = $selector($this);
+            if(!is_array($result)) $result = array($result);
+            return $result;
+        }
         if($selector) {
             return call_user_func_array(array($this->getDocument(), 'findAll'), $selector);
         }
@@ -151,6 +179,15 @@ class MagePage
     {
         $el = $this->getElementByName($element_name);
         if($el) $el->click();
+        else throw new \Exception('Could not find an element with selector '. implode(': ', $this->getSelector($element_name)));
+    }
+
+    public function SelectFromElement($element_name, $value)
+    {
+        $el = $this->getElementByName($element_name);
+        if($el) {
+            $el->selectOption($value);
+        }
         else throw new \Exception('Could not find an element with selector '. implode(': ', $this->getSelector($element_name)));
     }
 }

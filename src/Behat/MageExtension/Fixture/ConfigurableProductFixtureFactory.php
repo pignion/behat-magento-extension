@@ -33,11 +33,11 @@ class ConfigurableProductFixtureFactory extends ProductFixtureFactory
      * @return array
      * @throws \Exception
      */
-    public function generateSimples($attribute_combos, $parameters = array(), $limit = 5)
+    public function generateSimples($attribute_combos, $parameters = array(), $prices = array(), $limit = 5)
     {
         $simples = array();
 
-        foreach(array_slice($attribute_combos, 0, $limit) as $option_combination)
+        foreach(array_slice($attribute_combos, 0, $limit) as $i => $option_combination)
         {
             $product_attributes = $parameters;
             if(!is_callable($parameters['name'])) {
@@ -49,6 +49,8 @@ class ConfigurableProductFixtureFactory extends ProductFixtureFactory
             foreach($option_combination as $attribute_code => $option) {
                $product_attributes[$attribute_code] = $option['value'];
             }
+
+            if(isset($prices[$i])) $product_attributes['price'] = $prices[$i];
             $simples[] = $this->getManager()->getFactory('product')->create($product_attributes);
         }
         return $simples;
@@ -103,7 +105,15 @@ class ConfigurableProductFixtureFactory extends ProductFixtureFactory
                 }, $options);
             }
             $option_combos = $this->cartesianOptions($option_ids);
-            $simple_products = $this->generateSimples($option_combos, $parameters);
+
+            if(isset($parameters['option_prices'])) {
+                $prices = $parameters['option_prices'];
+            }
+            else {
+                $prices = array();
+            }
+
+            $simple_products = $this->generateSimples($option_combos, $parameters, $prices);
         }
 
         $data = $this->processParameters($parameters);
@@ -118,7 +128,10 @@ class ConfigurableProductFixtureFactory extends ProductFixtureFactory
 
         $config_data = array();
 
-        foreach($simple_products as $product) {
+
+        foreach($simple_products as $i => $product) {
+
+
             $pid = $product->getId();
             $config_data[$pid] = array();
             foreach($configurableAttributesData as $attribute) {
