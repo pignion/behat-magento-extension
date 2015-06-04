@@ -54,6 +54,9 @@ class PageManager
 
     }
 
+    /**
+     * @return MagePage
+     */
     public function getCurrentPage()
     {
         $product_id = null;

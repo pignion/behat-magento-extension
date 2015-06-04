@@ -82,11 +82,23 @@ class RawMageContext extends RawMinkContext implements MageAwareContext
     }
 
     /**
+     * @param null|string $expected_type the name of the class of which you expect the page to be.
+     * No type check if left null.
      * @return \Behat\MageExtension\Page\MagePage
+     * @throws \Exception
      */
-    public function getCurrentPage()
+    public function getCurrentPage($expected_type = null)
     {
-        return $this->getPageManager()->getCurrentPage();
+        $page = $this->getPageManager()->getCurrentPage();
+        if ($expected_type !== null && !$page->isA($expected_type)) {
+            throw new \Exception(
+                sprintf(
+                    'PageContextBase::getCurrentPage Expected a page of type %s but got %s',
+                    $expected_type, get_class($page)
+                )
+            );
+        }
+        return $page;
     }
 
     public function getProductUrlByName($product_name)
